@@ -3,7 +3,7 @@ import axios from "axios";
 
 import "./App.css";
 
-const endpoint = "http://127.0.0.1:8000/imagen";
+const endpoint = "http://127.0.0.1:8000/upload-file/";
 
 function App() {
   const [image, setImage] = useState(null);
@@ -11,18 +11,16 @@ function App() {
 
   const onImageChange = (event) => {
     if (event.target.files && event.target.files[0]) {
-      setImage(URL.createObjectURL(event.target.files[0]));
+      setImage(event.target.files[0]);
     }
   };
 
   const predict = async (e) => {
     e.preventDefault();
+    let formData = new FormData();
+    formData.append('uploaded_file', image);
 
-    const response = await axios.post(
-      endpoint,{
-        image: image
-      }
-    );
+    const response = await axios.post(endpoint, formData);
     console.log(response);
   };
 
