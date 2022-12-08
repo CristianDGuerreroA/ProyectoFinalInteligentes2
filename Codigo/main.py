@@ -4,9 +4,19 @@ from tensorflow.python.keras.models import load_model
 from fastapi import FastAPI, UploadFile, File
 import matplotlib.pyplot as plt
 import aiofiles as aiofiles
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def read_root():
@@ -16,12 +26,13 @@ def read_root():
 
 @app.post("/upload-file/")
 async def create_upload_file(uploaded_file: UploadFile = File(...)):
-    file_location = f"/ProyectoInt2\Codigo/{uploaded_file.filename}"
+    file_location = f"/ProyectoInteligentes2/ProyectoFinalInteligentes2\Codigo/{uploaded_file.filename}"
     with open(file_location, "wb+") as file_object:
         file_object.write(uploaded_file.file.read())
-        
-    PredecirFrontParametro(uploaded_file.filename)
-    return {"info": f"file '{uploaded_file.filename}' saved at '{file_location}'"}
+
+    valor,nombre = PredecirFrontParametro(uploaded_file.filename)
+    return {"porcentaje": f"{valor}", 
+            "Carta": f"{nombre}"}
 
 
 categorias = ['As_de_bastos', 'As_de_copas', 'As_de_espadas', 'As_de_oros',
@@ -40,6 +51,8 @@ class prediccion():
     """
     Carga el modelo de la red neuronal de la ruta especificada
     """
+    maxvalue = 0
+
 
     def __init__(self):
         self.rutaModelo = "modeloReconocimientoBarajaEsp.keras"
@@ -60,30 +73,11 @@ class prediccion():
         imagenesAPredecir = np.array(pruebas)
         predicciones = self.model.predict(x=imagenesAPredecir)
         claseMayorValor = np.argmax(predicciones, axis=1)
+        self.maxvalue = np.max(predicciones)
+        print('Valor maximo' , self.maxvalue)
         print('Predicciones', predicciones)
         print(claseMayorValor)
         return claseMayorValor[0]
-
-
-def PredecirFront():
-    reconocimiento = prediccion()
-    imagenPrueba = cv2.imread(
-        'Test_images/34/Sota_de_copas-12.jpg', 0)
-    # print(imagenPrueba)
-    indiceCategoria = reconocimiento.predecir(imagenPrueba)
-    print("La imagen cargada es ", categorias[indiceCategoria])
-
-    imagen = cv2.imread(
-        'Test_images/34/Sota_de_copas-12.jpg', 0)
-
-    if imagen is None:
-        print('error al cargar la imagen')
-    else:
-        plt.imshow(cv2.cvtColor(imagen, cv2.COLOR_BGR2RGB))
-        plt.axis("off")
-        plt.show()
-    cv2.destroyAllWindows()
-
 
 def PredecirFrontParametro(imagen):
     reconocimiento = prediccion()
@@ -98,8 +92,5 @@ def PredecirFrontParametro(imagen):
 
     if imagen is None:
         print('error al cargar la imagen')
-    else:
-        plt.imshow(cv2.cvtColor(imagen, cv2.COLOR_BGR2RGB))
-        plt.axis("off")
-        plt.show()
     cv2.destroyAllWindows()
+    return reconocimiento.maxvalue, categorias[indiceCategoria]
